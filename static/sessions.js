@@ -4267,11 +4267,33 @@ function _messageReloadLimitForSession(sid){
   return _INITIAL_MSG_LIMIT;
 }
 
+function _mergePagedToolCalls(previous, incoming, previousOffset, nextOffset){
+  const result=[];
+  const positions=new Map();
+  for(const [cards,offset] of [[previous,previousOffset],[incoming,nextOffset]]){
+    for(const card of (Array.isArray(cards)?cards:[])){
+      if(!card||typeof card!=='object') continue;
+      let projected={...card};
+      if(Number.isInteger(card.assistant_msg_idx)&&card.assistant_msg_idx>=0){
+        projected.assistant_msg_idx=card.assistant_msg_idx+offset-nextOffset;
+        if(projected.assistant_msg_idx<0) continue;
+      }
+      const key=card.id||card.tool_call_id||card.tcid;
+      if(key&&positions.has(key)) result[positions.get(key)]=projected;
+      else {if(key) positions.set(key,result.length); result.push(projected);}
+    }
+  }
+  return result;
+}
+
 function _syncToolCallsForLoadedMessages(messages, sessionToolCalls){
   const msgs=Array.isArray(messages)?messages:[];
-  // During active streaming, skip — clearing S.toolCalls would lose Activity
-  // and the renderMessages fallback is blocked by S.busy=true.
-  if(S.busy||S.activeStreamId) return;
+  // Paging changes persisted card coordinates even during an active stream.
+  // Keep live Activity separate: only the saved summary is refreshed while busy.
+  if(S.busy||S.activeStreamId){
+    if(S.session&&Array.isArray(sessionToolCalls)) S.session.tool_calls=sessionToolCalls.map(tc=>({...tc}));
+    return;
+  }
   // Persist the loaded compact tool summary onto S.session so the renderMessages
   // derived rebuild can use it as a durable per-tid snippet fallback on cold
   // load (#4927). loadSession keeps the messages=0 session object (tool_calls
@@ -5021,7 +5043,10 @@ async function _loadOlderMessages() {
       nextMessages = window._carryForwardEphemeralTurnFields(S.messages || [], nextMessages);
     }
     S.messages = nextMessages;
-    _syncToolCallsForLoadedMessages(nextMessages, responseSession.tool_calls);
+    const pagedToolCalls = _mergePagedToolCalls(
+      S.session && S.session.tool_calls, responseSession.tool_calls,
+      requestedBeforeOffset, Number(responseSession._messages_offset)||0);
+    _syncToolCallsForLoadedMessages(nextMessages, pagedToolCalls);
     // #7882 (greptile round-4 P2): older rows prepended during an in-flight
     // send are server-known rows — advance the send's optimistic-count
     // baseline by exactly the prepended visible rows so the send's eventual

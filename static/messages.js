@@ -2422,6 +2422,13 @@ function _applyEmbeddedTerminalSession(incoming,currentSession,currentMessages,c
     return {...incoming,messages:incomingMessages};
   }
   const isOffset=value=>Number.isSafeInteger(value)&&value>=0;
+  // A mixed deployment or rollback may still emit a complete legacy snapshot.
+  // Accept only provably complete payloads, never infer coordinates for a tail.
+  if(!Object.prototype.hasOwnProperty.call(incoming,'_messages_offset')&&
+    !Object.prototype.hasOwnProperty.call(incoming,'_messages_truncated')&&
+    incoming.message_count===incomingMessages.length){
+    incoming={...incoming,_messages_offset:0,_messages_truncated:false};
+  }
   const incomingOffset=incoming._messages_offset;
   const messageCount=incoming.message_count;
   const hasWindowMetadata=Array.isArray(incomingMessages)&&

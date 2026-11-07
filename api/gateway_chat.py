@@ -3372,6 +3372,8 @@ def _run_gateway_chat_streaming(
                 ]
                 if len(current_display_rows) == 1:
                     current_display_rows[0]["timestamp"] = user_msg["timestamp"]
+                    if not current_display_rows[0].get("id"):
+                        current_display_rows[0]["id"] = user_msg["id"]
             s.active_stream_id = None
             s.gateway_run = None
             s.pending_user_message = None

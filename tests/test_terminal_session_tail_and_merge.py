@@ -27,7 +27,7 @@ def _node(script):
     node = shutil.which("node")
     if not node:
         pytest.skip("node is required")
-    result = subprocess.run([node, "-e", script], text=True, capture_output=True, check=False)
+    result = subprocess.run([node, "-"], input=script, text=True, capture_output=True, check=False)
     assert result.returncode == 0, result.stderr or result.stdout
     return result.stdout.strip()
 
