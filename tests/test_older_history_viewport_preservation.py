@@ -91,6 +91,7 @@ def _run_loader_case(case: dict) -> dict:
             "function _stripForcedSkillEnvelope",
             "function _normalizeUserTranscriptText",
             "function _sameTranscriptMessage",
+            "function _mergePagedToolCalls",
         )
     )
     script = r"""

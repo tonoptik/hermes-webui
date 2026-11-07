@@ -629,6 +629,7 @@ def test_terminal_window_shift_resets_to_canonical_and_append_keeps_prefix(monke
     load_harness = f"""
 const ensure=eval('(' + {json.dumps(ensure_loaded)} + ')');
 const loadOlder=eval('(' + {json.dumps(load_older)} + ')');
+const _mergePagedToolCalls=eval('(' + {json.dumps(extract_function(sessions_source, '_mergePagedToolCalls'))} + ')');
 const upsert=eval('(' + {json.dumps(upsert_local_turn)} + ')');
 const _messageComparableText=eval('(' + {json.dumps(same_transcript_helpers['_messageComparableText'])} + ')');
 const _stripAttachedFilesMarker=eval('(' + {json.dumps(same_transcript_helpers['_stripAttachedFilesMarker'])} + ')');
@@ -687,7 +688,7 @@ process.stdout.write('ok');
 }})().catch(error=>{{console.error(error);process.exitCode=1;}});
 function listRange(start,end){{if(end===undefined){{end=start;start=0;}}return Array.from({{length:end-start}},(_,index)=>index+start);}}
 """
-    result = subprocess.run([node, "-e", shifted_script], cwd=ROOT, text=True, capture_output=True, check=False)
+    result = subprocess.run([node, "-"], input=shifted_script, cwd=ROOT, text=True, capture_output=True, check=False)
     assert result.returncode == 0, result.stderr or result.stdout
     assert result.stdout == "ok"
 
@@ -735,7 +736,7 @@ process.stdout.write('ok');
 }})().catch(error=>{{console.error(error);process.exitCode=1;}});
 function listRange(start,end){{if(end===undefined){{end=start;start=0;}}return Array.from({{length:end-start}},(_,index)=>index+start);}}
 """
-    result = subprocess.run([node, "-e", append_script], cwd=ROOT, text=True, capture_output=True, check=False)
+    result = subprocess.run([node, "-"], input=append_script, cwd=ROOT, text=True, capture_output=True, check=False)
     assert result.returncode == 0, result.stderr or result.stdout
     assert result.stdout == "ok"
 
